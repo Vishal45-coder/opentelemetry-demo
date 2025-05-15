@@ -27,30 +27,30 @@ jobs:
       
       - name: Sending it to EKS
         run: |
-          kubectl apply -f ./kubernetes/kubernetes/opentelemetry-demo.yaml 
-  kubernetes-failure-rollout:
-    needs: kubernetes-deployment-apply
-    runs-on: ubuntu-latest
-    if: failure()
-    strategy:
-      matrix:
-        step: [accountingservice,adservice,cartservice,checkoutservice,currencyservice,emailservice,frauddetectionservice,frontend,frontendproxy,imageprovider,kafka,loadgenerator,paymentservice,productcatalogservice,quoteservice,recommendationservice,shippingservice]
-  # Need to check on flagdui
+          kubectl apply --server-side --force-conflicts -n otel-demo -f https://raw.githubusercontent.com/open-telemetry/opentelemetry-demo/main/kubernetes/opentelemetry-demo.yaml 
+  # kubernetes-failure-rollout:
+  #   needs: kubernetes-deployment-apply
+  #   runs-on: ubuntu-latest
+  #   if: failure()
+  #   strategy:
+  #     matrix:
+  #       step: [accountingservice,adservice,cartservice,checkoutservice,currencyservice,emailservice,frauddetectionservice,frontend,frontendproxy,imageprovider,kafka,loadgenerator,paymentservice,productcatalogservice,quoteservice,recommendationservice,shippingservice]
+  # # Need to check on flagdui
 
     
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v3
 
-      - name: Connect to EKS cluster
-        uses: aws-actions/configure-aws-credentials@v3
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1 
+  #     - name: Connect to EKS cluster
+  #       uses: aws-actions/configure-aws-credentials@v3
+  #       with:
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: us-east-1 
 
-      - name: Update kubeconfig for EKS
-        run: aws eks update-kubeconfig --name otel-demo-cluster --region us-east-1
+  #     - name: Update kubeconfig for EKS
+  #       run: aws eks update-kubeconfig --name otel-demo-cluster --region us-east-1
 
-      - name: Rollback deployment $${{ matrix.step }}
-        run: kubectl rollout undo deployment/${{ matrix.step }}
+  #     - name: Rollback deployment $${{ matrix.step }}
+  #       run: kubectl rollout undo deployment/${{ matrix.step }}
