@@ -36,6 +36,10 @@ jobs:
       - name: Check Rollout Status
         run: |
           kubectl rollout status deployment -n otel-demo
+
+      - name: Force Delete Old Pods
+        run: |
+          kubectl get pods -n otel-demo --no-headers | awk '/26h/ {print $1}' | xargs -I {} kubectl delete pod {} -n otel-demo --force --grace-period=0
   # kubernetes-failure-rollout:
   #   needs: kubernetes-deployment-apply
   #   runs-on: ubuntu-latest
