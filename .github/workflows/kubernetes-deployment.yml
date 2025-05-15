@@ -25,10 +25,9 @@ jobs:
       - name: Update kubeconfig for EKS
         run: aws eks update-kubeconfig --name otel-demo-cluster --region us-east-1
       
-      - name: K8s apply ${{ matrix.step }}
+      - name: Sending it to EKS
         run: |
-          kubectl apply -f ./split_yaml/Deployment/opentelemetry-demo-${{ matrix.step }}.yaml
-
+          kubectl apply -f ./kubernetes/kubernetes/opentelemetry-demo.yaml 
   kubernetes-failure-rollout:
     needs: kubernetes-deployment-apply
     runs-on: ubuntu-latest
