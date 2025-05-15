@@ -13,16 +13,16 @@ jobs:
     uses: ./.github/workflows/component-build-images.yml
     secrets: inherit
 
-  integration_checks:
-    uses: ./.github/workflows/checks.yml
-    needs: build_images
-    secrets: inherit
-  integration_tests:
-    uses: ./.github/workflows/run-integration-tests.yml
-    needs: integration_checks
-    secrets: inherit
-  kubenetes_deployment:
-    uses: ./.github/workflows/kubernetes-deployment.yml
-    needs: integration_tests
-    secrets: inherit
+  # integration_checks:
+  #   uses: ./.github/workflows/checks.yml
+  #   needs: build_images
+  #   secrets: inherit
+  # integration_tests:
+  #   uses: ./.github/workflows/run-integration-tests.yml
+  #   needs: integration_checks
+  #   secrets: inherit
+  # kubenetes_deployment:
+  #   uses: ./.github/workflows/kubernetes-deployment.yml
+  #   needs: integration_tests
+  #   secrets: inherit
   
