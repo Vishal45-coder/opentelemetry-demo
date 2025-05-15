@@ -28,6 +28,14 @@ jobs:
       - name: Sending it to EKS
         run: |
           kubectl apply --server-side --force-conflicts -n otel-demo -f https://raw.githubusercontent.com/open-telemetry/opentelemetry-demo/main/kubernetes/opentelemetry-demo.yaml 
+      
+      - name: Restart Kubernetes Deployment
+        run: |
+          kubectl rollout restart deployment -n otel-demo
+
+      - name: Check Rollout Status
+        run: |
+          kubectl rollout status deployment -n otel-demo
   # kubernetes-failure-rollout:
   #   needs: kubernetes-deployment-apply
   #   runs-on: ubuntu-latest
