@@ -6,10 +6,6 @@ on:
 jobs:
   kubernetes-deployment-apply:
     runs-on: ubuntu-latest
-  #   strategy:
-  #     matrix:
-  #       step: [accountingservice,adservice,cartservice,checkoutservice,currencyservice,emailservice,frauddetectionservice,frontend,frontendproxy,imageprovider,kafka,loadgenerator,paymentservice,productcatalogservice,quoteservice,recommendationservice,shippingservice]
-  # # Need to check on flagdui
 
     steps:
       - name: Checkout repository
@@ -20,49 +16,53 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1 
+          aws-region: us-east-1
 
       - name: Update kubeconfig for EKS
         run: aws eks update-kubeconfig --name otel-demo-cluster --region us-east-1
-      
-      - name: Sending it to EKS
+
+      - name: Backup current deployment
         run: |
-          kubectl apply --server-side --force-conflicts -n otel-demo -f https://raw.githubusercontent.com/open-telemetry/opentelemetry-demo/main/kubernetes/opentelemetry-demo.yaml 
-      
-      - name: Restart Kubernetes Deployment
+          mkdir -p k8s-backup
+          kubectl get deployment -n otel-demo -o yaml > k8s-backup/deployment.yaml
+
+      - name: Deploy to EKS
+        run: |
+          kubectl apply --server-side --force-conflicts -n otel-demo -f https://raw.githubusercontent.com/open-telemetry/opentelemetry-demo/main/kubernetes/opentelemetry-demo.yaml
+
+      - name: Restart Deployments
         run: |
           kubectl rollout restart deployment -n otel-demo
 
-      - name: Check Rollout Status
+      - name: Wait for Rollout Completion
         run: |
-          kubectl rollout status deployment -n otel-demo
+          kubectl rollout status deployment -n otel-demo --timeout=60s
 
-      - name: Force Delete Old Pods
+      - name: Force Delete Old Pods (optional)
         run: |
-          kubectl get pods -n otel-demo --no-headers | awk '/26h/ {print $1}' | xargs -I {} kubectl delete pod {} -n otel-demo --force --grace-period=0
-  # kubernetes-failure-rollout:
-  #   needs: kubernetes-deployment-apply
-  #   runs-on: ubuntu-latest
-  #   if: failure()
-  #   strategy:
-  #     matrix:
-  #       step: [accountingservice,adservice,cartservice,checkoutservice,currencyservice,emailservice,frauddetectionservice,frontend,frontendproxy,imageprovider,kafka,loadgenerator,paymentservice,productcatalogservice,quoteservice,recommendationservice,shippingservice]
-  # # Need to check on flagdui
+          kubectl get pods -n otel-demo --no-headers | awk '$5 ~ /h/ {print $1}' | xargs -I {} kubectl delete pod {} -n otel-demo --force --grace-period=0
 
-    
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v3
+  kubernetes-failure-rollback:
+    needs: kubernetes-deployment-apply
+    runs-on: ubuntu-latest
+    if: failure()
 
-  #     - name: Connect to EKS cluster
-  #       uses: aws-actions/configure-aws-credentials@v3
-  #       with:
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         aws-region: us-east-1 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-  #     - name: Update kubeconfig for EKS
-  #       run: aws eks update-kubeconfig --name otel-demo-cluster --region us-east-1
+      - name: Connect to EKS cluster
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-  #     - name: Rollback deployment $${{ matrix.step }}
-  #       run: kubectl rollout undo deployment/${{ matrix.step }}
+      - name: Update kubeconfig for EKS
+        run: aws eks update-kubeconfig --name otel-demo-cluster --region us-east-1
+
+      - name: Rollback to previous stable deployment
+        run: |
+          echo "Rolling back deployment due to failure..."
+          kubectl apply -f k8s-backup/deployment.yaml
+          kubectl rollout status deployment -n otel-demo --timeout=60s
