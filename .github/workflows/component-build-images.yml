@@ -2,28 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 on:
-  workflow_call:
-    inputs:
-      push:
-        description: Should the images be pushed
-        default: false
-        required: false
-        type: boolean
-      version:
-        description: The version used when tagging the image
-        default: 'dev'
-        required: false
-        type: string
-      dockerhub_repo:
-        description: Docker Hub repository
-        default: 'otel/demo'
-        required: false
-        type: string
-      ghcr_repo:
-        description: GHCR repository
-        default: 'ghcr.io/open-telemetry/demo'
-        required: false
-        type: string
+  workflow_call: # This makes the workflow reusable
 
 jobs:
   protobufcheck:
