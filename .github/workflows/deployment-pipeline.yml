@@ -9,7 +9,7 @@ on:
       - main  # Adjust to the branch you want to trigger the workflow
 
 jobs:
-  build_images:
+  build_test_images:
     uses: ./.github/workflows/component-build-images.yml
     secrets: inherit
 
@@ -25,16 +25,8 @@ jobs:
 
   #     - name: Test Image generation
   #       run: make run-tests  # Or use docker compose run frontendTests etc.
-  # integration_checks:
-  #   uses: ./.github/workflows/checks.yml
-  #   needs: build_images
-  #   secrets: inherit
-  integration_tests:
-    uses: ./.github/workflows/build-images.yml
-    needs: build_images
-    secrets: inherit
   kubenetes_deployment:
     uses: ./.github/workflows/kubernetes-deployment.yml
-    needs: integration_tests
+    needs: build_test_images
     secrets: inherit
   
