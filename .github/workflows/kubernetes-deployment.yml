@@ -1,15 +1,17 @@
-name: Kubernetes Deployment
+name: Deploy OpenTelemetry Demo via Helm on EKS
 
 on:
-  workflow_call:  # This allows it to be used in other workflows via 'uses'
+  push:
+    branches:
+      - main
 
 jobs:
-  deploy-to-eks:
-    name: Deploy to Amazon EKS
+  deploy:
+    name: Deploy with Helm
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Configure AWS credentials
@@ -19,43 +21,34 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+
       - name: Update kubeconfig for EKS
-        run: aws eks update-kubeconfig --name otel-demo-cluster --region us-east-1
-
-      - name: Deploy to Kubernetes
         run: |
-          kubectl apply --server-side --force-conflicts -n otel-demo -f https://raw.githubusercontent.com/open-telemetry/opentelemetry-demo/main/kubernetes/opentelemetry-demo.yaml
+          aws eks update-kubeconfig --name otel-demo-cluster --region us-east-1
 
-      # - name: Restart All Deployments
-      #   run: |
-      #     for deployment in $(kubectl get deployments -n otel-demo -o jsonpath="{.items[*].metadata.name}"); do
-      #       echo "Restarting $deployment"
-      #       kubectl rollout restart deployment/$deployment -n otel-demo
-      #     done
-
-      - name: Wait for Rollout Completion
+      - name: Helm upgrade or install
         run: |
-          for deployment in $(kubectl get deployments -n otel-demo -o jsonpath="{.items[*].metadata.name}"); do
-            echo "Checking rollout status for $deployment"
-            kubectl rollout status deployment/$deployment -n otel-demo
-          done
+          helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
+          helm repo update
+          helm upgrade --install otel-demo open-telemetry/opentelemetry-demo \
+            --namespace otel-helm --create-namespace
 
-      # - name: Clean Up Old or Pending Pods
-      #   run: |
-      #     kubectl get pods -n otel-demo --no-headers | \
-      #     awk '$3 == "Pending" || $3 == "Terminating" {print $1}' | \
-      #     xargs -r kubectl delete pod -n otel-demo --force --grace-period=0 || true
+      - name: Wait for frontend rollout
+        run: |
+          kubectl rollout status deployment/frontend -n otel-helm --timeout=180s
 
-  rollback-on-failure:
-    name: Rollback on Failure
-    runs-on: ubuntu-latest
+  rollback:
+    name: Rollback if deployment fails
     if: failure()
-    needs: deploy-to-eks
+    runs-on: ubuntu-latest
+    needs: deploy
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
@@ -63,12 +56,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Update kubeconfig for EKS
-        run: aws eks update-kubeconfig --name otel-demo-cluster --region us-east-1
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
 
-      - name: Rollback all deployments
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+
+      - name: Update kubeconfig for EKS
         run: |
-          for deployment in $(kubectl get deployments -n otel-demo -o jsonpath="{.items[*].metadata.name}"); do
-            echo "Rolling back $deployment"
-            kubectl rollout undo deployment/$deployment -n otel-demo
-          done
+          aws eks update-kubeconfig --name otel-demo-cluster --region us-east-1
+
+      - name: Rollback to previous release
+        run: helm rollback otel-demo 1 -n otel-helm
