@@ -13,20 +13,32 @@ jobs:
     uses: ./.github/workflows/component-build-images.yml
     secrets: inherit
 
-  # run_tests:
-  #   needs: build_images
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout Repo
-  #       uses: actions/checkout@v3
+  run_tests:
+    name: Run Integration Tests
+    needs: build_test_images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-  #     - name: Set up Docker
-  #       uses: docker/setup-buildx-action@v3
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
 
-  #     - name: Test Image generation
-  #       run: make run-tests  # Or use docker compose run frontendTests etc.
+      - name: Run Integration Tests
+        run: |
+          docker-compose -f docker-compose.yml -f test.yml up --exit-code-from integrationTests
+        continue-on-error: true  # Allow pipeline to continue even if tests fail
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 7
+
   kubenetes_deployment:
     uses: ./.github/workflows/kubernetes-deployment.yml
-    needs: build_test_images
+    needs: run_tests
     secrets: inherit
   
