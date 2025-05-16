@@ -33,7 +33,6 @@ jobs:
     uses: ./.github/workflows/build-images.yml
     needs: build_images
     secrets: inherit
-    continue-on-error: true
   kubenetes_deployment:
     uses: ./.github/workflows/kubernetes-deployment.yml
     needs: integration_tests
