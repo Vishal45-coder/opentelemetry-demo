@@ -23,8 +23,9 @@ jobs:
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
 
-      - name: Run All Tests
-        run: make run-tests  # Or use docker compose run frontendTests etc.
+      - name: Run Frontend Tests
+        run: docker compose run frontendTests
+  # Or use docker compose run frontendTests etc.
   # integration_checks:
   #   uses: ./.github/workflows/checks.yml
   #   needs: build_images
