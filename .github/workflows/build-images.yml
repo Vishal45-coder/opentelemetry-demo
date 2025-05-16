@@ -3,10 +3,7 @@
 name: Test image generation
 
 on:
-  push:
-    paths:
-      - 'src/**'
-      - 'test/**'
+  workflow_call: # This makes the workflow reusable
 
 jobs:
   build_images:
