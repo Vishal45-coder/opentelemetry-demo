@@ -15,7 +15,7 @@ jobs:
 
   run_tests:
     needs: build_images
-    # runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
