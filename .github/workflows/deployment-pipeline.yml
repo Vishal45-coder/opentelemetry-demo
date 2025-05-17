@@ -28,7 +28,7 @@ jobs:
         run: |
           docker compose -f docker-compose.yml -f docker-compose-tests.yml up -d frontendTests traceBasedTests
       - name: Show Frontend Test Logs
-        run: docker logs frontend-tests
+        run: docker logs frontendTests
 
       - name: Show Trace-based Test Logs
         run: docker logs traceBasedTests
