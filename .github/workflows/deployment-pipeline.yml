@@ -27,7 +27,11 @@ jobs:
       - name: Run Integration Tests
         run: |
           docker compose -f docker-compose.yml -f docker-compose-tests.yml up -d frontendTests traceBasedTests
-        continue-on-error: true  # Allow pipeline to continue even if tests fail
+      - name: Show Frontend Test Logs
+        run: docker logs frontend-tests
+
+      - name: Show Trace-based Test Logs
+        run: docker logs traceBasedTests
 
   kubenetes_deployment:
     uses: ./.github/workflows/kubernetes-deployment.yml
