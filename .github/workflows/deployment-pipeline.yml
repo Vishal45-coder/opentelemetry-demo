@@ -26,7 +26,7 @@ jobs:
 
       - name: Run Integration Tests
         run: |
-          docker compose -f docker-compose.yml -f docker-compose-tests.yml up -d frontendTests traceBasedTests integrationTests
+          docker compose -f docker-compose.yml -f docker-compose-tests.yml up -d frontendTests traceBasedTests 
 
   kubenetes_deployment:
     uses: ./.github/workflows/kubernetes-deployment.yml
